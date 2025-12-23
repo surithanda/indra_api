@@ -326,6 +326,62 @@ export const getPartnerRegistrations = async (req: Request, res: Response): Prom
 };
 
 /**
+ * Create partner registration
+ */
+export const createPartnerRegistration = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      business_name,
+      business_type,
+      registration_number,
+      tax_id,
+      contact_person,
+      contact_email,
+      contact_phone,
+      contact_phone_country,
+      website
+    } = req.body;
+    const adminUser = req.admin?.username || 'system';
+
+    // Validate required fields
+    if (!business_name || !business_type || !contact_person || !contact_email || !contact_phone || !contact_phone_country) {
+      sendError(res, 400, '50000', 'Business name, type, contact person, email, phone, and phone country are required');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contact_email)) {
+      sendError(res, 400, '50000', 'Invalid email format');
+      return;
+    }
+
+    const result = await adminService.createPartnerRegistration(
+      business_name,
+      business_type,
+      registration_number,
+      tax_id,
+      contact_person,
+      contact_email,
+      contact_phone,
+      contact_phone_country,
+      website,
+      adminUser
+    );
+
+    sendSuccess(res, result);
+  } catch (error: any) {
+    console.error('Create partner registration error:', error);
+    
+    if (error.message.includes('already exists')) {
+      sendError(res, 409, '51012', error.message);
+    } else {
+      sendInternalError(res, 'Failed to create partner registration', error.message);
+    }
+  }
+};
+
+/**
  * Approve or reject partner
  */
 export const approveRejectPartner = async (req: Request, res: Response): Promise<void> => {
@@ -443,6 +499,307 @@ export const getApiClientPayments = async (req: Request, res: Response): Promise
       sendError(res, 404, '51011', error.message);
     } else {
       sendInternalError(res, 'Failed to get API client payments', error.message);
+    }
+  }
+};
+
+/**
+ * Get countries list
+ */
+export const getCountries = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const results = await adminService.getCountries();
+    sendSuccess(res, results);
+  } catch (error: any) {
+    console.error('Get countries error:', error);
+    sendInternalError(res, 'Failed to get countries', error.message);
+  }
+};
+
+/**
+ * Get states by country ID
+ */
+export const getStatesByCountry = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const countryId = req.query.country_id ? parseInt(req.query.country_id as string) : null;
+    const results = await adminService.getStatesByCountry(countryId);
+    sendSuccess(res, results);
+  } catch (error: any) {
+    console.error('Get states error:', error);
+    sendInternalError(res, 'Failed to get states', error.message);
+  }
+};
+
+/**
+ * Get lookup data by category
+ */
+export const getLookupData = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const category = req.query.category as string || null;
+    const results = await adminService.getLookupData(category);
+    sendSuccess(res, results);
+  } catch (error: any) {
+    console.error('Get lookup data error:', error);
+    sendInternalError(res, 'Failed to get lookup data', error.message);
+  }
+};
+
+/**
+ * Get account logins
+ */
+export const getAccountLogins = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const accountId = parseInt(req.params.account_id);
+    
+    if (isNaN(accountId)) {
+      res.status(400).json({ error: { message: 'Invalid account ID' } });
+      return;
+    }
+    
+    const results = await adminService.getAccountLogins(accountId);
+    sendSuccess(res, results);
+  } catch (error: any) {
+    console.error('Get account logins error:', error);
+    sendInternalError(res, 'Failed to get account logins', error.message);
+  }
+};
+
+/**
+ * Create account
+ */
+export const createAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      email,
+      password,
+      first_name,
+      middle_name,
+      last_name,
+      birth_date,
+      gender,
+      primary_phone,
+      primary_phone_country,
+      primary_phone_type,
+      secondary_phone,
+      secondary_phone_country,
+      secondary_phone_type,
+      address_line1,
+      address_line2,
+      city,
+      state,
+      zip,
+      country,
+      photo,
+      secret_question,
+      secret_answer,
+      partner_id
+    } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !first_name || !last_name || !birth_date || !gender || !primary_phone || !primary_phone_country) {
+      sendError(res, 400, '50000', 'Missing required fields: email, password, first_name, last_name, birth_date, gender, primary_phone, primary_phone_country');
+      return;
+    }
+
+    const result = await adminService.createAccount(
+      email,
+      password,
+      first_name,
+      middle_name || null,
+      last_name,
+      birth_date,
+      gender,
+      primary_phone,
+      primary_phone_country,
+      primary_phone_type || 1,
+      secondary_phone || null,
+      secondary_phone_country || null,
+      secondary_phone_type || null,
+      address_line1 || null,
+      address_line2 || null,
+      city || null,
+      state || null,
+      zip || null,
+      country || null,
+      photo || null,
+      secret_question || null,
+      secret_answer || null,
+      partner_id || null
+    );
+
+    sendSuccess(res, result);
+  } catch (error: any) {
+    console.error('Create account error:', error);
+    
+    if (error.message.includes('already exists') || error.message.includes('duplicate')) {
+      sendError(res, 409, '50001', error.message);
+    } else if (error.message.includes('invalid') || error.message.includes('validation')) {
+      sendError(res, 400, '50002', error.message);
+    } else {
+      sendInternalError(res, 'Failed to create account', error.message);
+    }
+  }
+};
+
+/**
+ * Update account
+ */
+export const updateAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { account_code } = req.params;
+    
+    const {
+      email,
+      first_name,
+      middle_name,
+      last_name,
+      primary_phone,
+      primary_phone_country,
+      primary_phone_type,
+      birth_date,
+      gender,
+      address_line1,
+      address_line2,
+      city,
+      state,
+      zip,
+      country,
+      photo,
+      secondary_phone,
+      secondary_phone_country,
+      secondary_phone_type
+    } = req.body;
+
+    // Validate required fields
+    if (!account_code || !email) {
+      sendError(res, 400, '50000', 'Account code and email are required');
+      return;
+    }
+
+    const result = await adminService.updateAccount(
+      account_code,
+      email,
+      first_name || null,
+      middle_name || null,
+      last_name || null,
+      primary_phone || null,
+      primary_phone_country || null,
+      primary_phone_type || null,
+      birth_date || null,
+      gender || null,
+      address_line1 || null,
+      address_line2 || null,
+      city || null,
+      state || null,
+      zip || null,
+      country || null,
+      photo || null,
+      secondary_phone || null,
+      secondary_phone_country || null,
+      secondary_phone_type || null
+    );
+
+    sendSuccess(res, result);
+  } catch (error: any) {
+    console.error('Update account error:', error);
+    
+    if (error.message.includes('not found')) {
+      sendError(res, 404, '50003', error.message);
+    } else if (error.message.includes('invalid') || error.message.includes('validation')) {
+      sendError(res, 400, '50002', error.message);
+    } else {
+      sendInternalError(res, 'Failed to update account', error.message);
+    }
+  }
+};
+
+/**
+ * Update partner registration
+ */
+export const updatePartnerRegistration = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const partnerId = parseInt(req.params.id);
+    const adminUser = req.admin?.username || 'system';
+
+    if (isNaN(partnerId)) {
+      sendError(res, 400, '50000', 'Invalid partner ID');
+      return;
+    }
+
+    const {
+      business_name,
+      alias,
+      business_email,
+      primary_phone,
+      primary_phone_country_code,
+      secondary_phone,
+      address_line1,
+      city,
+      state,
+      country,
+      zip,
+      business_registration_number,
+      business_ITIN,
+      business_description,
+      primary_contact_first_name,
+      primary_contact_last_name,
+      primary_contact_gender,
+      primary_contact_date_of_birth,
+      primary_contact_email,
+      business_linkedin,
+      business_website,
+      business_facebook,
+      business_whatsapp,
+      isverified,
+      is_active,
+      domain_root_url,
+      verification_comment,
+      verification_status
+    } = req.body;
+
+    const result = await adminService.updatePartnerRegistration(
+      partnerId,
+      business_name,
+      alias,
+      business_email,
+      primary_phone,
+      primary_phone_country_code,
+      secondary_phone,
+      address_line1,
+      city,
+      state,
+      country,
+      zip,
+      business_registration_number,
+      business_ITIN,
+      business_description,
+      primary_contact_first_name,
+      primary_contact_last_name,
+      primary_contact_gender,
+      primary_contact_date_of_birth,
+      primary_contact_email,
+      business_linkedin,
+      business_website,
+      business_facebook,
+      business_whatsapp,
+      isverified,
+      is_active,
+      domain_root_url,
+      verification_comment,
+      verification_status,
+      adminUser
+    );
+
+    sendSuccess(res, result);
+  } catch (error: any) {
+    console.error('Update partner registration error:', error);
+    
+    if (error.message.includes('not exist')) {
+      sendError(res, 404, '48202', error.message);
+    } else if (error.message.includes('required')) {
+      sendError(res, 400, '48201', error.message);
+    } else {
+      sendInternalError(res, 'Failed to update partner registration', error.message);
     }
   }
 };

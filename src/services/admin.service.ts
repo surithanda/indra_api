@@ -78,9 +78,9 @@ export const listAdminUsers = async (
   offset: number = 0
 ) => {
   const results = await executeProcedure('admin_users_list', [
-    role,
-    isActive,
-    search,
+    role ?? null,
+    isActive ?? null,
+    search ?? null,
     limit,
     offset
   ]);
@@ -131,8 +131,15 @@ export const getProfiles = async (
     offset
   ]);
 
+  console.log('Raw profiles results:', JSON.stringify(results, null, 2));
+
   if (!results || results.length === 0) {
     return [];
+  }
+
+  // Check if the procedure returned an error
+  if (results[0] && results[0][0] && results[0][0].status === 'fail') {
+    throw new Error(results[0][0].error_message || 'Failed to get profiles');
   }
 
   return results[0];
@@ -247,6 +254,47 @@ export const getPartnerRegistrations = async (
 };
 
 /**
+ * Create partner registration
+ */
+export const createPartnerRegistration = async (
+  businessName: string,
+  businessType: string,
+  registrationNumber?: string,
+  taxId?: string,
+  contactPerson: string = '',
+  contactEmail: string = '',
+  contactPhone: string = '',
+  contactPhoneCountry: string = '',
+  website?: string,
+  createdBy: string = 'system'
+) => {
+  const results = await executeProcedure('admin_create_partner_registration', [
+    businessName,
+    businessType,
+    registrationNumber || null,
+    taxId || null,
+    contactPerson,
+    contactEmail,
+    contactPhone,
+    contactPhoneCountry,
+    website || null,
+    createdBy
+  ]);
+
+  if (!results || results.length === 0) {
+    throw new Error('Failed to create partner registration');
+  }
+
+  const result = results[0][0];
+
+  if (result.status === 'fail') {
+    throw new Error(result.error_message);
+  }
+
+  return result;
+};
+
+/**
  * Approve or reject partner registration
  */
 export const approvePartnerRegistration = async (
@@ -332,4 +380,227 @@ export const getApiClientPayments = async (
   }
 
   return results[0];
+};
+
+/**
+ * Update partner registration
+ */
+export const updatePartnerRegistration = async (
+  partnerId: number,
+  businessName?: string,
+  alias?: string,
+  businessEmail?: string,
+  primaryPhone?: string,
+  primaryPhoneCountryCode?: number,
+  secondaryPhone?: string,
+  addressLine1?: string,
+  city?: string,
+  state?: number,
+  country?: number,
+  zip?: string,
+  businessRegistrationNumber?: string,
+  businessITIN?: string,
+  businessDescription?: string,
+  primaryContactFirstName?: string,
+  primaryContactLastName?: string,
+  primaryContactGender?: number,
+  primaryContactDateOfBirth?: string,
+  primaryContactEmail?: string,
+  businessLinkedin?: string,
+  businessWebsite?: string,
+  businessFacebook?: string,
+  businessWhatsapp?: string,
+  isVerified?: number,
+  isActive?: boolean,
+  domainRootUrl?: string,
+  verificationComment?: string,
+  verificationStatus?: string,
+  modifiedUser: string = 'system'
+) => {
+  const results = await executeProcedure('admin_registered_partner_update_v1', [
+    partnerId,
+    businessName ?? null,
+    alias ?? null,
+    businessEmail ?? null,
+    primaryPhone ?? null,
+    primaryPhoneCountryCode ?? null,
+    secondaryPhone ?? null,
+    addressLine1 ?? null,
+    city ?? null,
+    state ?? null,
+    country ?? null,
+    zip ?? null,
+    businessRegistrationNumber ?? null,
+    businessITIN ?? null,
+    businessDescription ?? null,
+    primaryContactFirstName ?? null,
+    primaryContactLastName ?? null,
+    primaryContactGender ?? null,
+    primaryContactDateOfBirth ?? null,
+    primaryContactEmail ?? null,
+    businessLinkedin ?? null,
+    businessWebsite ?? null,
+    businessFacebook ?? null,
+    businessWhatsapp ?? null,
+    isVerified ?? null,
+    isActive !== undefined ? (isActive ? 1 : 0) : null,
+    domainRootUrl ?? null,
+    verificationComment ?? null,
+    verificationStatus ?? null,
+    modifiedUser
+  ]);
+
+  if (results[0][0]?.status === 'fail') {
+    throw new Error(results[0][0].error_message);
+  }
+
+  return results[0][0];
+};
+
+/**
+ * Get countries list
+ */
+export const getCountries = async () => {
+  const results = await executeProcedure('lkp_get_Country_List', []);
+  return results[0];
+};
+
+/**
+ * Get states by country ID
+ */
+export const getStatesByCountry = async (countryId: number | null) => {
+  const results = await executeProcedure('lkp_get_Country_States', [countryId]);
+  return results[0];
+};
+
+/**
+ * Get lookup data by category
+ */
+export const getLookupData = async (category: string | null) => {
+  const results = await executeProcedure('lkp_get_LookupData', [category]);
+  return results[0];
+};
+
+/**
+ * Get account logins
+ */
+export const getAccountLogins = async (accountId: number) => {
+  const results = await executeProcedure('admin_get_account_logins', [accountId]);
+  return results[0];
+};
+
+/**
+ * Create account
+ */
+export const createAccount = async (
+  email: string,
+  password: string,
+  firstName: string,
+  middleName: string | null,
+  lastName: string,
+  birthDate: string,
+  gender: number,
+  primaryPhone: string,
+  primaryPhoneCountry: string,
+  primaryPhoneType: number,
+  secondaryPhone: string | null,
+  secondaryPhoneCountry: string | null,
+  secondaryPhoneType: number | null,
+  addressLine1: string | null,
+  addressLine2: string | null,
+  city: string | null,
+  state: string | null,
+  zip: string | null,
+  country: string | null,
+  photo: string | null,
+  secretQuestion: string | null,
+  secretAnswer: string | null,
+  partnerId: number | null
+) => {
+  const results = await executeProcedure('eb_account_login_create', [
+    email,
+    password,
+    firstName,
+    middleName,
+    lastName,
+    birthDate,
+    gender,
+    primaryPhone,
+    primaryPhoneCountry,
+    primaryPhoneType,
+    secondaryPhone,
+    secondaryPhoneCountry,
+    secondaryPhoneType,
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    zip,
+    country,
+    photo,
+    secretQuestion,
+    secretAnswer,
+    partnerId
+  ]);
+
+  if (results[0][0]?.status === 'fail') {
+    throw new Error(results[0][0].error_message);
+  }
+
+  return results[0][0];
+};
+
+/**
+ * Update account
+ */
+export const updateAccount = async (
+  accountCode: string,
+  email: string,
+  firstName: string | null,
+  middleName: string | null,
+  lastName: string | null,
+  primaryPhone: string | null,
+  primaryPhoneCountry: string | null,
+  primaryPhoneType: string | null,
+  birthDate: string | null,
+  gender: string | null,
+  addressLine1: string | null,
+  addressLine2: string | null,
+  city: string | null,
+  state: string | null,
+  zip: string | null,
+  country: string | null,
+  photo: string | null,
+  secondaryPhone: string | null,
+  secondaryPhoneCountry: string | null,
+  secondaryPhoneType: string | null
+) => {
+  const results = await executeProcedure('eb_account_update', [
+    accountCode,
+    email,
+    firstName,
+    middleName,
+    lastName,
+    primaryPhone,
+    primaryPhoneCountry,
+    primaryPhoneType,
+    birthDate,
+    gender,
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    zip,
+    country,
+    photo,
+    secondaryPhone,
+    secondaryPhoneCountry,
+    secondaryPhoneType
+  ]);
+
+  if (results[0][0]?.status === 'fail') {
+    throw new Error(results[0][0].error_message);
+  }
+
+  return results[0][0];
 };

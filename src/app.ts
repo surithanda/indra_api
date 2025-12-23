@@ -20,8 +20,12 @@ const app: Application = express();
 app.use(helmet());
 
 // CORS configuration
+console.log('🔍 CORS Configuration:');
+console.log('   CORS_ORIGIN from .env:', process.env.CORS_ORIGIN);
+console.log('   Using CORS origin:', process.env.CORS_ORIGIN || 'http://localhost:5173');
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
   optionsSuccessStatus: 200,
 };

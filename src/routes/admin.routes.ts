@@ -42,11 +42,20 @@ router.put('/profiles/verify', requireApprover, adminController.updateVerifyStat
  * Account Management Routes
  */
 
+// Create account (approver or admin)
+router.post('/accounts', requireApprover, adminController.createAccount);
+
+// Update account (approver or admin)
+router.put('/accounts/:account_code', requireApprover, adminController.updateAccount);
+
 // Enable account (approver or admin)
 router.put('/accounts/:id/enable', requireApprover, adminController.enableAccount);
 
 // Disable account (approver or admin)
 router.put('/accounts/:id/disable', requireApprover, adminController.disableAccount);
+
+// Get account logins (any role)
+router.get('/accounts/:account_id/logins', requireAnyRole, adminController.getAccountLogins);
 
 /**
  * Payment Management Routes
@@ -62,8 +71,33 @@ router.get('/payments/summary', requireAnyRole, adminController.getPaymentSummar
 // Get partner registrations (any role)
 router.get('/partners/registrations', requireAnyRole, adminController.getPartnerRegistrations);
 
+// Create partner registration (approver or admin)
+router.post('/partners/registrations', requireApprover, adminController.createPartnerRegistration);
+
 // Approve or reject partner (approver or admin)
 router.post('/partners/:id/approve', requireApprover, adminController.approveRejectPartner);
+
+// Update partner registration (approver or admin)
+router.put('/partners/:id', requireApprover, adminController.updatePartnerRegistration);
+
+/**
+ * Lookup/Metadata Routes
+ */
+
+/**
+ * Get countries list
+ */
+router.get('/countries', requireAnyRole, adminController.getCountries);
+
+/**
+ * Get states by country
+ */
+router.get('/states', requireAnyRole, adminController.getStatesByCountry);
+
+/**
+ * Get lookup data by category
+ */
+router.get('/lookup', requireAnyRole, adminController.getLookupData);
 
 /**
  * API Client Management Routes
